@@ -45,3 +45,13 @@ resource "aws_internet_gateway" "k8s" {
 output "jumphost-pubip" {
   value = aws_instance.jumphost.public_ip
 }
+
+output "make_machines_file" {
+  value = <<EOT
+cat << EOF > machines.txt
+${aws_instance.master.private_ip} server.kubernetes.local server
+%{ for idx, inst in aws_instance.worker ~}
+${inst.private_ip} node-${idx}.kubernetes.local node-${idx} 10.200.${idx}.0/24
+%{ endfor ~}EOF
+EOT
+}

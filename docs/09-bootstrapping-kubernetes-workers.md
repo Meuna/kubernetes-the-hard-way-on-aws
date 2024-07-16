@@ -15,8 +15,7 @@ for host in node-0 node-1; do
   sed "s|SUBNET|$SUBNET|g" \
     configs/kubelet-config.yaml > kubelet-config.yaml
     
-  scp 10-bridge.conf kubelet-config.yaml \
-  root@$host:~/
+  scp 10-bridge.conf kubelet-config.yaml admin@$host:~
 done
 ```
 
@@ -37,28 +36,41 @@ for host in node-0 node-1; do
     units/containerd.service \
     units/kubelet.service \
     units/kube-proxy.service \
-    root@$host:~/
+    admin@$host:~/
 done
 ```
+
+Download the OS dependencies (the worker don't have internet access)
+
+```bash
+{
+  sudo rm /var/cache/apt/archives/*.deb
+  sudo apt-get update
+  sudo apt-get -d -y install socat conntrack ipset
+}
+```
+
+```bash
+for host in node-0 node-1; do
+  scp /var/cache/apt/archives/*.deb admin@$host:~
+done
+```
+
+> The socat binary enables support for the `kubectl port-forward` command.
+
+## Provisioning a Kubernetes Worker Node
 
 The commands in this lab must be run on each worker instance: `node-0`, `node-1`. Login to the worker instance using the `ssh` command. Example:
 
 ```bash
-ssh root@node-0
+ssh admin@node-0
 ```
 
-## Provisioning a Kubernetes Worker Node
-
-Install the OS dependencies:
+### Install OS dependencies
 
 ```bash
-{
-  apt-get update
-  apt-get -y install socat conntrack ipset
-}
+sudo dpkg -i *.deb
 ```
-
-> The socat binary enables support for the `kubectl port-forward` command.
 
 ### Disable Swap
 
@@ -67,13 +79,13 @@ By default, the kubelet will fail to start if [swap](https://help.ubuntu.com/com
 Verify if swap is enabled:
 
 ```bash
-swapon --show
+sudo swapon --show
 ```
 
 If output is empty then swap is not enabled. If swap is enabled run the following command to disable swap immediately:
 
 ```bash
-swapoff -a
+sudo swapoff -a
 ```
 
 > To ensure swap remains off after reboot consult your Linux distro documentation.
@@ -81,7 +93,7 @@ swapoff -a
 Create the installation directories:
 
 ```bash
-mkdir -p \
+sudo mkdir -p \
   /etc/cni/net.d \
   /opt/cni/bin \
   /var/lib/kubelet \
@@ -97,11 +109,11 @@ Install the worker binaries:
   mkdir -p containerd
   tar -xvf crictl-v1.28.0-linux-arm.tar.gz
   tar -xvf containerd-1.7.8-linux-arm64.tar.gz -C containerd
-  tar -xvf cni-plugins-linux-arm64-v1.3.0.tgz -C /opt/cni/bin/
+  sudo tar -xvf cni-plugins-linux-arm64-v1.3.0.tgz -C /opt/cni/bin/
   mv runc.arm64 runc
   chmod +x crictl kubectl kube-proxy kubelet runc 
-  mv crictl kubectl kube-proxy kubelet runc /usr/local/bin/
-  mv containerd/bin/* /bin/
+  sudo mv crictl kubectl kube-proxy kubelet runc /usr/local/bin/
+  sudo mv containerd/bin/* /bin/
 }
 ```
 
@@ -110,7 +122,7 @@ Install the worker binaries:
 Create the `bridge` network configuration file:
 
 ```bash
-mv 10-bridge.conf 99-loopback.conf /etc/cni/net.d/
+sudo mv 10-bridge.conf 99-loopback.conf /etc/cni/net.d/
 ```
 
 ### Configure containerd
@@ -119,9 +131,9 @@ Install the `containerd` configuration files:
 
 ```bash
 {
-  mkdir -p /etc/containerd/
-  mv containerd-config.toml /etc/containerd/config.toml
-  mv containerd.service /etc/systemd/system/
+  sudo mkdir -p /etc/containerd/
+  sudo mv containerd-config.toml /etc/containerd/config.toml
+  sudo mv containerd.service /etc/systemd/system/
 }
 ```
 
@@ -131,8 +143,8 @@ Create the `kubelet-config.yaml` configuration file:
 
 ```bash
 {
-  mv kubelet-config.yaml /var/lib/kubelet/
-  mv kubelet.service /etc/systemd/system/
+  sudo mv kubelet-config.yaml /var/lib/kubelet/
+  sudo mv kubelet.service /etc/systemd/system/
 }
 ```
 
@@ -140,8 +152,8 @@ Create the `kubelet-config.yaml` configuration file:
 
 ```bash
 {
-  mv kube-proxy-config.yaml /var/lib/kube-proxy/
-  mv kube-proxy.service /etc/systemd/system/
+  sudo mv kube-proxy-config.yaml /var/lib/kube-proxy/
+  sudo mv kube-proxy.service /etc/systemd/system/
 }
 ```
 
@@ -149,9 +161,9 @@ Create the `kubelet-config.yaml` configuration file:
 
 ```bash
 {
-  systemctl daemon-reload
-  systemctl enable containerd kubelet kube-proxy
-  systemctl start containerd kubelet kube-proxy
+  sudo systemctl daemon-reload
+  sudo systemctl enable containerd kubelet kube-proxy
+  sudo systemctl start containerd kubelet kube-proxy
 }
 ```
 
@@ -162,7 +174,7 @@ The compute instances created in this tutorial will not have permission to compl
 List the registered Kubernetes nodes:
 
 ```bash
-ssh root@server \
+ssh admin@server \
   "kubectl get nodes \
   --kubeconfig admin.kubeconfig"
 ```

@@ -1,5 +1,4 @@
 resource "aws_instance" "master" {
-  count           = 1
   ami             = data.aws_ami.debian_arm.id
   instance_type   = "t4g.small"
   key_name        = aws_key_pair.k8s.key_name
@@ -9,11 +8,11 @@ resource "aws_instance" "master" {
   instance_market_options { market_type = "spot" }
 
   tags = {
-    Name = "k8s-the-hard-way-master${count.index}"
+    Name = "k8s-the-hard-way-master"
   }
 }
 
-resource "aws_instance" "workers" {
+resource "aws_instance" "worker" {
   count           = 2
   ami             = data.aws_ami.debian_arm.id
   instance_type   = "t4g.small"

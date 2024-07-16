@@ -24,75 +24,14 @@ XXX.XXX.XXX.XXX node-0.kubernetes.local node-0 10.200.0.0/24
 XXX.XXX.XXX.XXX node-1.kubernetes.local node-1 10.200.1.0/24
 ```
 
-Now it's your turn to create a `machines.txt` file with the details for the three machines you will be using to create your Kubernetes cluster. Use the example machine database from above and add the details for your machines. 
-
-## Configuring SSH Access
-
-SSH will be used to configure the machines in the cluster. Verify that you have `root` SSH access to each machine listed in your machine database. You may need to enable root SSH access on each node by updating the sshd_config file and restarting the SSH server.
-
-### Enable root SSH Access
-
-If `root` SSH access is enabled for each of your machines you can skip this section.
-
-By default, a new `debian` install disables SSH access for the `root` user. This is done for security reasons as the `root` user is a well known user on Linux systems, and if a weak password is used on a machine connected to the internet, well, let's just say it's only a matter of time before your machine belongs to someone else. As mention earlier, we are going to enable `root` access over SSH in order to streamline the steps in this tutorial. Security is a tradeoff, and in this case, we are optimizing for convenience. On each machine login via SSH using your user account, then switch to the `root` user using the `su` command:
+Create a `machines.txt` file using the `make_machines_file` returned by OpenTofu.
 
 ```bash
-su - root
-```
-
-Edit the `/etc/ssh/sshd_config` SSH daemon configuration file and the `PermitRootLogin` option to `yes`:
-
-```bash
-sed -i \
-  's/^#PermitRootLogin.*/PermitRootLogin yes/' \
-  /etc/ssh/sshd_config
-```
-
-Restart the `sshd` SSH server to pick up the updated configuration file:
-
-```bash
-systemctl restart sshd
-```
-
-### Generate and Distribute SSH Keys
-
-In this section you will generate and distribute an SSH keypair to the `server`, `node-0`, and `node-1`, machines, which will be used to run commands on those machines throughout this tutorial. Run the following commands from the `jumpbox` machine.
-
-Generate a new SSH key:
-
-```bash
-ssh-keygen
-```
-
-```text
-Generating public/private rsa key pair.
-Enter file in which to save the key (/root/.ssh/id_rsa): 
-Enter passphrase (empty for no passphrase): 
-Enter same passphrase again: 
-Your identification has been saved in /root/.ssh/id_rsa
-Your public key has been saved in /root/.ssh/id_rsa.pub
-```
-
-Copy the SSH public key to each machine:
-
-```bash
-while read IP FQDN HOST SUBNET; do 
-  ssh-copy-id root@${IP}
-done < machines.txt
-```
-
-Once each key is added, verify SSH public key access is working:
-
-```bash
-while read IP FQDN HOST SUBNET; do 
-  ssh -n root@${IP} uname -o -m
-done < machines.txt
-```
-
-```text
-aarch64 GNU/Linux
-aarch64 GNU/Linux
-aarch64 GNU/Linux
+cat << EOF > machines.txt
+XXX.XXX.XXX.XXX server.kubernetes.local server  
+XXX.XXX.XXX.XXX node-0.kubernetes.local node-0 10.200.0.0/24
+XXX.XXX.XXX.XXX node-1.kubernetes.local node-1 10.200.1.0/24
+EOF
 ```
 
 ## Hostnames
@@ -105,9 +44,9 @@ Set the hostname on each machine listed in the `machines.txt` file:
 
 ```bash
 while read IP FQDN HOST SUBNET; do 
-    CMD="sed -i 's/^127.0.1.1.*/127.0.1.1\t${FQDN} ${HOST}/' /etc/hosts"
-    ssh -n root@${IP} "$CMD"
-    ssh -n root@${IP} hostnamectl hostname ${HOST}
+    CMD="sudo sed -i '/^127.0.0.1.*/a 127.0.1.1\t${FQDN} ${HOST}/' /etc/hosts"
+    ssh -n admin@${IP} "$CMD"
+    ssh -n admin@${IP} sudo hostnamectl hostname ${HOST}
 done < machines.txt
 ```
 
@@ -115,14 +54,16 @@ Verify the hostname is set on each machine:
 
 ```bash
 while read IP FQDN HOST SUBNET; do
-  ssh -n root@${IP} hostname --fqdn
+  ssh -n admin@${IP} hostname --fqdn
 done < machines.txt
 ```
 
+When prompted, type `yes` and proceed. After accepting the new host fingerprint, running the above command a second time will yield the following.
+
 ```text
-server.kubernetes.local
-node-0.kubernetes.local
-node-1.kubernetes.local
+server
+node-0
+node-1
 ```
 
 ## DNS
@@ -166,7 +107,7 @@ In this section you will append the DNS entries from the `hosts` file to the loc
 Append the DNS entries from `hosts` to `/etc/hosts`:
 
 ```bash
-cat hosts >> /etc/hosts
+sudo sh -c 'cat hosts >> /etc/hosts'
 ```
 
 Verify that the `/etc/hosts` file has been updated:
@@ -196,9 +137,11 @@ At this point you should be able to SSH to each machine listed in the `machines.
 
 ```bash
 for host in server node-0 node-1
-   do ssh root@${host} uname -o -m -n
+   do ssh admin@${host} uname -o -m -n
 done
 ```
+
+When prompted, type `yes` and proceed. After accepting the new host fingerprint, running the above command a second time will yield the following.
 
 ```text
 server aarch64 GNU/Linux
@@ -214,9 +157,9 @@ Copy the `hosts` file to each machine and append the contents to `/etc/hosts`:
 
 ```bash
 while read IP FQDN HOST SUBNET; do
-  scp hosts root@${HOST}:~/
+  scp hosts admin@${HOST}:~/
   ssh -n \
-    root@${HOST} "cat hosts >> /etc/hosts"
+    admin@${HOST} "sudo sh -c 'cat hosts >> /etc/hosts'"
 done < machines.txt
 ```
 

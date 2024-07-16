@@ -10,13 +10,13 @@ Copy `etcd` binaries and systemd unit files to the `server` instance:
 scp \
   downloads/etcd-v3.4.27-linux-arm64.tar.gz \
   units/etcd.service \
-  root@server:~/
+  admin@server:~
 ```
 
 The commands in this lab must be run on the `server` machine. Login to the `server` machine using the `ssh` command. Example:
 
 ```bash
-ssh root@server
+ssh admin@server
 ```
 
 ## Bootstrapping an etcd Cluster
@@ -28,7 +28,7 @@ Extract and install the `etcd` server and the `etcdctl` command line utility:
 ```bash
 {
   tar -xvf etcd-v3.4.27-linux-arm64.tar.gz
-  mv etcd-v3.4.27-linux-arm64/etcd* /usr/local/bin/
+  sudo mv etcd-v3.4.27-linux-arm64/etcd* /usr/local/bin/
 }
 ```
 
@@ -36,10 +36,9 @@ Extract and install the `etcd` server and the `etcdctl` command line utility:
 
 ```bash
 {
-  mkdir -p /etc/etcd /var/lib/etcd
-  chmod 700 /var/lib/etcd
-  cp ca.crt kube-api-server.key kube-api-server.crt \
-    /etc/etcd/
+  sudo mkdir -p /etc/etcd /var/lib/etcd
+  sudo chmod 700 /var/lib/etcd
+  sudo cp ca.crt kube-api-server.key kube-api-server.crt /etc/etcd/
 }
 ```
 
@@ -48,16 +47,16 @@ Each etcd member must have a unique name within an etcd cluster. Set the etcd na
 Create the `etcd.service` systemd unit file:
 
 ```bash
-mv etcd.service /etc/systemd/system/
+sudo mv etcd.service /etc/systemd/system/
 ```
 
 ### Start the etcd Server
 
 ```bash
 {
-  systemctl daemon-reload
-  systemctl enable etcd
-  systemctl start etcd
+  sudo systemctl daemon-reload
+  sudo systemctl enable etcd
+  sudo systemctl start etcd
 }
 ```
 

@@ -188,13 +188,12 @@ Copy the `kubelet` and `kube-proxy` kubeconfig files to the node-0 instance:
 
 ```bash
 for host in node-0 node-1; do
-  ssh root@$host "mkdir /var/lib/{kube-proxy,kubelet}"
-  
-  scp kube-proxy.kubeconfig \
-    root@$host:/var/lib/kube-proxy/kubeconfig \
-  
-  scp ${host}.kubeconfig \
-    root@$host:/var/lib/kubelet/kubeconfig
+  scp kube-proxy.kubeconfig ${host}.kubeconfig admin@$host:/home/admin
+
+  ssh admin@$host sudo sh "-c ' \
+    mkdir /var/lib/kube-proxy \
+    && mv /home/admin/kube-proxy.kubeconfig /var/lib/kube-proxy/kubeconfig \
+    && mv /home/admin/${host}.kubeconfig /var/lib/kubelet/kubeconfig'"
 done
 ```
 
@@ -204,7 +203,7 @@ Copy the `kube-controller-manager` and `kube-scheduler` kubeconfig files to the 
 scp admin.kubeconfig \
   kube-controller-manager.kubeconfig \
   kube-scheduler.kubeconfig \
-  root@server:~/
+  admin@server:~
 ```
 
 Next: [Generating the Data Encryption Config and Key](06-data-encryption-keys.md)

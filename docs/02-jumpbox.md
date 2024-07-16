@@ -7,17 +7,18 @@ Think of the `jumpbox` as the administration machine that you will use as a home
 Log in to the `jumpbox`:
 
 ```bash
-ssh root@jumpbox
+ssh admin@jumpbox
 ```
 
-All commands will be run as the `root` user. This is being done for the sake of convenience, and will help reduce the number of commands required to set everything up.
+All commands will be run as the `admin` user. This is being done for the sake of convenience, and will help reduce the number of commands required to set everything up.
 
 ### Install Command Line Utilities
 
 Now that you are logged into the `jumpbox` machine as the `root` user, you will install the command line utilities that will be used to preform various tasks throughout the tutorial. 
 
 ```bash
-apt-get -y install wget curl vim openssl git
+sudo apt-get update
+sudo apt-get -y install wget curl vim openssl git
 ```
 
 ### Sync GitHub Repository
@@ -26,13 +27,13 @@ Now it's time to download a copy of this tutorial which contains the configurati
 
 ```bash
 git clone --depth 1 \
-  https://github.com/kelseyhightower/kubernetes-the-hard-way.git
+  https://github.com/Meuna/kubernetes-the-hard-way-on-aws.git
 ```
 
 Change into the `kubernetes-the-hard-way` directory:
 
 ```bash
-cd kubernetes-the-hard-way
+cd kubernetes-the-hard-way-on-aws
 ```
 
 This will be the working directory for the rest of the tutorial. If you ever get lost run the `pwd` command to verify you are in the right directory when running commands on the `jumpbox`:
@@ -42,7 +43,7 @@ pwd
 ```
 
 ```text
-/root/kubernetes-the-hard-way
+/home/admin/kubernetes-the-hard-way-on-aws
 ```
 
 ### Download Binaries
@@ -101,7 +102,7 @@ Use the `chmod` command to make the `kubectl` binary executable and move it to t
 ```bash
 {
   chmod +x downloads/kubectl
-  cp downloads/kubectl /usr/local/bin/
+  sudo cp downloads/kubectl /usr/local/bin/
 }
 ```
 
