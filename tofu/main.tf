@@ -49,8 +49,7 @@ output "jumphost-pubip" {
 output "make_machines_file" {
   value = <<EOT
 cat << EOF > machines.txt
-${aws_instance.master.private_ip} server.kubernetes.local server
-%{ for idx, inst in aws_instance.worker ~}
+%{ for idx, inst in aws_instance.nodes ~}
 ${inst.private_ip} node-${idx}.kubernetes.local node-${idx} 10.200.${idx}.0/24
 %{ endfor ~}EOF
 EOT
